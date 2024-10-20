@@ -1,13 +1,16 @@
 import { IncomingMessage, ServerResponse } from 'node:http';
-import { randomUUID } from 'node:crypto';
 
 import { User, usersData } from '../database';
 import { mockedUser } from './mockedData';
 
 const dataValidator = (data: User): string => {
-  for (const key in mockedUser) {
-    if (!(key in data)) {
-      return `Field '${key}' is required.`;
+  if (typeof data !== 'object' || Array.isArray(data)) {
+    return 'Incorrect data format';
+  }
+
+  for (const key in data) {
+    if (!(key in mockedUser)) {
+      return '';
     }
 
     if (
@@ -23,7 +26,11 @@ const dataValidator = (data: User): string => {
   return '';
 };
 
-const createUser = (req: IncomingMessage, res: ServerResponse) => {
+const updateUser = (
+  req: IncomingMessage,
+  res: ServerResponse,
+  userId: string,
+) => {
   let body = '';
   req
     .on('data', (chunk) => {
@@ -31,33 +38,23 @@ const createUser = (req: IncomingMessage, res: ServerResponse) => {
     })
     .on('end', () => {
       try {
-        const data = JSON.parse(body);
-        const handledData = [];
-
-        if (Array.isArray(data)) {
-          for (const element of data) {
-            const errorMessage = dataValidator(element);
-            if (errorMessage) {
-              res.writeHead(400, { 'Content-Type': 'application/json' });
-              return res.end(JSON.stringify({ message: errorMessage }));
-            } else {
-              element.id = randomUUID();
-              handledData.push(element);
-            }
-          }
-        } else {
+        const index = usersData.findIndex((user) => user.id === userId);
+        if (index !== -1) {
+          const data = JSON.parse(body);
           const errorMessage = dataValidator(data);
           if (errorMessage) {
             res.writeHead(400, { 'Content-Type': 'application/json' });
             return res.end(JSON.stringify({ message: errorMessage }));
           } else {
-            data.id = randomUUID();
-            handledData.push(data);
+            const updatedUser = { ...usersData[index], ...data };
+            usersData[index] = updatedUser;
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify(updatedUser));
           }
+        } else {
+          res.writeHead(404, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ message: 'User not found' }));
         }
-        usersData.push(...handledData);
-        res.writeHead(201, { 'Content-Type': 'application/json' });
-        return res.end(JSON.stringify(data));
       } catch {
         res.writeHead(400, { 'Content-Type': 'application/json' });
         return res.end(JSON.stringify({ message: 'Invalid JSON format' }));
@@ -65,4 +62,4 @@ const createUser = (req: IncomingMessage, res: ServerResponse) => {
     });
 };
 
-export { createUser };
+export { updateUser };
