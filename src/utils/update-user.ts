@@ -53,11 +53,11 @@ const updateUser = (
           }
         } else {
           res.writeHead(404, { 'Content-Type': 'application/json' });
-          return res.end(JSON.stringify({ message: 'User not found' }));
+          return res.end(JSON.stringify({ message: 'User not found.' }));
         }
       } catch {
         res.writeHead(400, { 'Content-Type': 'application/json' });
-        return res.end(JSON.stringify({ message: 'Invalid JSON format' }));
+        return res.end(JSON.stringify({ message: 'Invalid JSON format.' }));
       }
     });
 };

@@ -60,7 +60,7 @@ const createUser = (req: IncomingMessage, res: ServerResponse) => {
         return res.end(JSON.stringify(data));
       } catch {
         res.writeHead(400, { 'Content-Type': 'application/json' });
-        return res.end(JSON.stringify({ message: 'Invalid JSON format' }));
+        return res.end(JSON.stringify({ message: 'Invalid JSON format.' }));
       }
     });
 };

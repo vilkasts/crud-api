@@ -1,8 +1,14 @@
 import { IncomingMessage, ServerResponse } from 'node:http';
 import { validate } from 'uuid';
 
-import { createUser, getAllUsers, getUserById, updateUser } from '../utils';
 import { RequestMethods } from './enums';
+import {
+  createUser,
+  deleteUser,
+  getAllUsers,
+  getUserById,
+  updateUser,
+} from '../utils';
 
 const requestHandler = (req: IncomingMessage, res: ServerResponse) => {
   const { method, url } = req;
@@ -44,6 +50,24 @@ const requestHandler = (req: IncomingMessage, res: ServerResponse) => {
           );
         }
         return updateUser(req, res, userId);
+
+      case RequestMethods.DELETE:
+        if (userId) {
+          if (!validate(userId)) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            return res.end(
+              JSON.stringify({ message: 'Invalid userId format.' }),
+            );
+          }
+        } else {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(
+            JSON.stringify({
+              message: 'Missing userId. Please specify userId.',
+            }),
+          );
+        }
+        return deleteUser(req, res, userId);
 
       default:
         res.writeHead(405, { 'Content-Type': 'application/json' });
