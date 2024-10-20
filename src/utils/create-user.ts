@@ -1,15 +1,22 @@
 import { IncomingMessage, ServerResponse } from 'node:http';
 import { randomUUID } from 'node:crypto';
 
-import { User, usersData } from '../database';
-import { mockedUser } from './mockedData';
+import type { User } from '../helpers/models';
+import { ErrorMessages } from '../helpers/enums';
+import { mockedUser } from '../helpers/mocks';
+import { getError } from '../helpers/get-error';
+import { usersData } from '../database';
+
+type CreateUserProps = {
+  req: IncomingMessage;
+  res: ServerResponse;
+};
 
 const dataValidator = (data: User): string => {
   for (const key in mockedUser) {
     if (!(key in data)) {
       return `Field '${key}' is required.`;
     }
-
     if (
       typeof data[key as keyof User] !== typeof mockedUser[key as keyof User]
     ) {
@@ -20,49 +27,59 @@ const dataValidator = (data: User): string => {
       }'`;
     }
   }
+
   return '';
 };
 
-const createUser = (req: IncomingMessage, res: ServerResponse) => {
-  let body = '';
-  req
-    .on('data', (chunk) => {
-      body += chunk.toString();
-    })
-    .on('end', () => {
-      try {
-        const data = JSON.parse(body);
-        const handledData = [];
+const createUser = ({ req, res }: CreateUserProps): void => {
+  try {
+    let body = '';
 
-        if (Array.isArray(data)) {
-          for (const element of data) {
-            const errorMessage = dataValidator(element);
+    req
+      .on('data', (chunk) => {
+        body += chunk.toString();
+      })
+      .on('end', () => {
+        try {
+          const users = JSON.parse(body);
+          const handledUsers = [];
+
+          if (Array.isArray(users)) {
+            for (const user of users) {
+              const errorMessage = dataValidator(user);
+              if (errorMessage) {
+                getError({ res, code: 400, message: errorMessage });
+                return;
+              } else {
+                user.id = randomUUID();
+                handledUsers.push(user);
+              }
+            }
+          } else {
+            const errorMessage = dataValidator(users);
             if (errorMessage) {
-              res.writeHead(400, { 'Content-Type': 'application/json' });
-              return res.end(JSON.stringify({ message: errorMessage }));
+              getError({ res, code: 400, message: errorMessage });
+              return;
             } else {
-              element.id = randomUUID();
-              handledData.push(element);
+              users.id = randomUUID();
+              handledUsers.push(users);
             }
           }
-        } else {
-          const errorMessage = dataValidator(data);
-          if (errorMessage) {
-            res.writeHead(400, { 'Content-Type': 'application/json' });
-            return res.end(JSON.stringify({ message: errorMessage }));
-          } else {
-            data.id = randomUUID();
-            handledData.push(data);
-          }
+          usersData.push(...handledUsers);
+          res
+            .writeHead(201, { 'Content-Type': 'application/json' })
+            .end(JSON.stringify(users));
+        } catch {
+          getError({
+            res,
+            code: 400,
+            message: ErrorMessages.InvalidJsonFormat,
+          });
         }
-        usersData.push(...handledData);
-        res.writeHead(201, { 'Content-Type': 'application/json' });
-        return res.end(JSON.stringify(data));
-      } catch {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        return res.end(JSON.stringify({ message: 'Invalid JSON format.' }));
-      }
-    });
+      });
+  } catch {
+    getError({ res, code: 500, message: ErrorMessages.InternalError });
+  }
 };
 
 export { createUser };

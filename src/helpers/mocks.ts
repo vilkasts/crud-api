@@ -1,4 +1,4 @@
-import { User } from '../database';
+import { User } from './models';
 
 const mockedUser: User = {
   age: 38,

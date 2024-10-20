@@ -1,7 +1,16 @@
 import { IncomingMessage, ServerResponse } from 'node:http';
 
-import { User, usersData } from '../database';
-import { mockedUser } from './mockedData';
+import type { User } from '../helpers/models';
+import { ErrorMessages } from '../helpers/enums';
+import { getError } from '../helpers/get-error';
+import { mockedUser } from '../helpers/mocks';
+import { usersData } from '../database';
+
+type UpdateUserType = {
+  req: IncomingMessage;
+  res: ServerResponse;
+  userId?: string;
+};
 
 const dataValidator = (data: User): string => {
   if (typeof data !== 'object' || Array.isArray(data)) {
@@ -9,9 +18,7 @@ const dataValidator = (data: User): string => {
   }
 
   for (const key in data) {
-    if (!(key in mockedUser)) {
-      return '';
-    }
+    if (!(key in mockedUser)) return '';
 
     if (
       typeof data[key as keyof User] !== typeof mockedUser[key as keyof User]
@@ -26,40 +33,48 @@ const dataValidator = (data: User): string => {
   return '';
 };
 
-const updateUser = (
-  req: IncomingMessage,
-  res: ServerResponse,
-  userId: string,
-) => {
-  let body = '';
-  req
-    .on('data', (chunk) => {
-      body += chunk.toString();
-    })
-    .on('end', () => {
-      try {
-        const index = usersData.findIndex((user) => user.id === userId);
-        if (index !== -1) {
-          const data = JSON.parse(body);
-          const errorMessage = dataValidator(data);
-          if (errorMessage) {
-            res.writeHead(400, { 'Content-Type': 'application/json' });
-            return res.end(JSON.stringify({ message: errorMessage }));
+const updateUser = ({ req, res, userId }: UpdateUserType): void => {
+  try {
+    let body = '';
+
+    req
+      .on('data', (chunk) => {
+        body += chunk.toString();
+      })
+      .on('end', () => {
+        try {
+          const index = usersData.findIndex((user) => user.id === userId);
+
+          if (index !== -1) {
+            const data = JSON.parse(body);
+            const errorMessage = dataValidator(data);
+
+            if (errorMessage) {
+              getError({ res, code: 400, message: errorMessage });
+              return;
+            } else {
+              const updatedUser = { ...usersData[index], ...data };
+              usersData[index] = updatedUser;
+
+              res
+                .writeHead(200, { 'Content-Type': 'application/json' })
+                .end(JSON.stringify(updatedUser));
+            }
           } else {
-            const updatedUser = { ...usersData[index], ...data };
-            usersData[index] = updatedUser;
-            res.writeHead(200, { 'Content-Type': 'application/json' });
-            return res.end(JSON.stringify(updatedUser));
+            getError({ res, code: 404, message: ErrorMessages.UserNotFound });
+            return;
           }
-        } else {
-          res.writeHead(404, { 'Content-Type': 'application/json' });
-          return res.end(JSON.stringify({ message: 'User not found.' }));
+        } catch {
+          getError({
+            res,
+            code: 400,
+            message: ErrorMessages.InvalidJsonFormat,
+          });
         }
-      } catch {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        return res.end(JSON.stringify({ message: 'Invalid JSON format.' }));
-      }
-    });
+      });
+  } catch {
+    getError({ res, code: 500, message: ErrorMessages.InternalError });
+  }
 };
 
 export { updateUser };

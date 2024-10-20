@@ -1,11 +1,5 @@
-type User = {
-  age: number;
-  hobbies: string[];
-  id?: string;
-  username: string;
-};
+import type { User } from './helpers/models';
 
 const usersData: User[] = [];
 
 export { usersData };
-export type { User };
