@@ -1,7 +1,8 @@
 import { IncomingMessage, ServerResponse } from 'node:http';
 import { validate } from 'uuid';
 
-import { ErrorMessages, RequestMethods } from './enums';
+import type { User } from './models';
+import { Endpoints, ErrorMessages, RequestMethods } from './enums';
 import { getError } from './get-error';
 import {
   createUser,
@@ -11,11 +12,15 @@ import {
   updateUser,
 } from '../utils';
 
-const requestHandler = (req: IncomingMessage, res: ServerResponse): void => {
+const requestHandler = (
+  req: IncomingMessage,
+  res: ServerResponse,
+  database: User[],
+): void => {
   try {
     const { method, url } = req;
 
-    if (method && url?.startsWith('/api/users')) {
+    if (method && url?.startsWith(Endpoints.UsersEndpoint)) {
       const userId: string = url.split('/')[3] ?? '';
 
       switch (method) {
@@ -29,14 +34,14 @@ const requestHandler = (req: IncomingMessage, res: ServerResponse): void => {
               });
               break;
             }
-            getUserById({ res, userId });
+            getUserById({ res, userId, database });
           } else {
-            getAllUsers({ res });
+            getAllUsers({ res, database });
           }
           break;
 
         case RequestMethods.POST:
-          createUser({ req, res });
+          createUser({ req, res, database });
           break;
 
         case RequestMethods.PUT:
@@ -53,7 +58,7 @@ const requestHandler = (req: IncomingMessage, res: ServerResponse): void => {
             getError({ res, code: 400, message: ErrorMessages.NoUserId });
             break;
           }
-          updateUser({ req, res, userId });
+          updateUser({ req, res, userId, database });
           break;
 
         case RequestMethods.DELETE:
@@ -70,7 +75,7 @@ const requestHandler = (req: IncomingMessage, res: ServerResponse): void => {
             getError({ res, code: 400, message: ErrorMessages.NoUserId });
             break;
           }
-          deleteUser({ res, userId });
+          deleteUser({ res, userId, database });
           break;
 
         default:

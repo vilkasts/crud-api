@@ -1,3 +1,7 @@
+enum Endpoints {
+  UsersEndpoint = '/api/users',
+}
+
 enum ErrorMessages {
   InternalError = 'Internal serverside error.',
   InvalidJsonFormat = 'Invalid JSON format.',
@@ -15,4 +19,4 @@ enum RequestMethods {
   PUT = 'PUT',
 }
 
-export { ErrorMessages, RequestMethods };
+export { Endpoints, ErrorMessages, RequestMethods };

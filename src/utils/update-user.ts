@@ -4,12 +4,12 @@ import type { User } from '../helpers/models';
 import { ErrorMessages } from '../helpers/enums';
 import { getError } from '../helpers/get-error';
 import { mockedUser } from '../helpers/mocks';
-import { usersData } from '../database';
 
 type UpdateUserType = {
   req: IncomingMessage;
   res: ServerResponse;
   userId?: string;
+  database: User[];
 };
 
 const dataValidator = (data: User): string => {
@@ -33,7 +33,7 @@ const dataValidator = (data: User): string => {
   return '';
 };
 
-const updateUser = ({ req, res, userId }: UpdateUserType): void => {
+const updateUser = ({ req, res, userId, database }: UpdateUserType): void => {
   try {
     let body = '';
 
@@ -43,7 +43,7 @@ const updateUser = ({ req, res, userId }: UpdateUserType): void => {
       })
       .on('end', () => {
         try {
-          const index = usersData.findIndex((user) => user.id === userId);
+          const index = database.findIndex((user) => user.id === userId);
 
           if (index !== -1) {
             const data = JSON.parse(body);
@@ -53,8 +53,8 @@ const updateUser = ({ req, res, userId }: UpdateUserType): void => {
               getError({ res, code: 400, message: errorMessage });
               return;
             } else {
-              const updatedUser = { ...usersData[index], ...data };
-              usersData[index] = updatedUser;
+              const updatedUser = { ...database[index], ...data };
+              database[index] = updatedUser;
 
               res
                 .writeHead(200, { 'Content-Type': 'application/json' })

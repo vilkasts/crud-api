@@ -1,17 +1,18 @@
 import { ServerResponse } from 'node:http';
 
+import type { User } from '../helpers/models';
 import { ErrorMessages } from '../helpers/enums';
 import { getError } from '../helpers/get-error';
-import { usersData } from '../database';
 
 type GetUserByIdProps = {
   res: ServerResponse;
   userId?: string;
+  database: User[];
 };
 
-const getUserById = ({ res, userId }: GetUserByIdProps): void => {
+const getUserById = ({ res, userId, database }: GetUserByIdProps): void => {
   try {
-    const user = usersData.find((user) => user.id === userId);
+    const user = database.find((user) => user.id === userId);
 
     if (user) {
       res

@@ -6,4 +6,16 @@ const mockedUser: User = {
   username: 'Valera Alkash',
 };
 
-export { mockedUser };
+const mockedDatabase: User[] = [];
+
+const mockedValidFormatUserId = '488527a2-3f49-43e8-b0f6-6f84d8668321';
+const mockedInvalidFormatUserId = 'some-incorrect-user-id';
+const mockedInvalidEndpoint = '/some/invalid/endpoint';
+
+export {
+  mockedDatabase,
+  mockedInvalidEndpoint,
+  mockedInvalidFormatUserId,
+  mockedUser,
+  mockedValidFormatUserId,
+};

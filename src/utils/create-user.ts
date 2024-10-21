@@ -5,11 +5,11 @@ import type { User } from '../helpers/models';
 import { ErrorMessages } from '../helpers/enums';
 import { mockedUser } from '../helpers/mocks';
 import { getError } from '../helpers/get-error';
-import { usersData } from '../database';
 
 type CreateUserProps = {
   req: IncomingMessage;
   res: ServerResponse;
+  database: User[];
 };
 
 const dataValidator = (data: User): string => {
@@ -31,7 +31,7 @@ const dataValidator = (data: User): string => {
   return '';
 };
 
-const createUser = ({ req, res }: CreateUserProps): void => {
+const createUser = ({ req, res, database }: CreateUserProps): void => {
   try {
     let body = '';
 
@@ -65,7 +65,7 @@ const createUser = ({ req, res }: CreateUserProps): void => {
               handledUsers.push(users);
             }
           }
-          usersData.push(...handledUsers);
+          database.push(...handledUsers);
           res
             .writeHead(201, { 'Content-Type': 'application/json' })
             .end(JSON.stringify(users));
